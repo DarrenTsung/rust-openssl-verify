@@ -18,7 +18,7 @@
 //! extern crate openssl_verify;
 //!
 //! use std::net::TcpStream;
-//! use openssl::ssl::{SslContextBuilder, SslMethod, Ssl, SslStream, SSL_VERIFY_PEER};
+//! use openssl::ssl::{SslContextBuilder, SslMethod, Ssl, SslStream, SslVerifyMode};
 //! use openssl_verify::verify_callback;
 //!
 //! # fn main() {
@@ -31,7 +31,7 @@
 //!
 //! let mut ssl = Ssl::new(&ctx).unwrap();
 //! let domain = domain.to_owned();
-//! ssl.set_verify_callback(SSL_VERIFY_PEER, move |p, x| verify_callback(&domain, p, x));
+//! ssl.set_verify_callback(SslVerifyMode::PEER, move |p, x| verify_callback(&domain, p, x));
 //!
 //! let ssl_stream = ssl.connect(stream).unwrap();
 //! # }
@@ -96,7 +96,7 @@ fn verify_subject_alt_names(domain: &str, names: &StackRef<GeneralName>) -> bool
 }
 
 fn verify_subject_name(domain: &str, subject_name: &X509NameRef) -> bool {
-    if let Some(pattern) = subject_name.entries_by_nid(nid::COMMONNAME).next() {
+    if let Some(pattern) = subject_name.entries_by_nid(nid::Nid::COMMONNAME).next() {
         let pattern = match str::from_utf8(pattern.data().as_slice()) {
             Ok(pattern) => pattern,
             Err(_) => return false,
@@ -210,7 +210,7 @@ fn matches_ip(expected: &IpAddr, actual: &[u8]) -> bool {
 
 #[cfg(test)]
 mod test {
-    use openssl::ssl::{SslContextBuilder, SslMethod, Ssl, SslStream, SSL_VERIFY_PEER};
+    use openssl::ssl::{SslVerifyMode, SslContextBuilder, SslMethod, Ssl, SslStream};
     use openssl::ssl::HandshakeError;
     use std::io;
     use std::net::TcpStream;
@@ -285,7 +285,7 @@ mod test {
         let mut ssl = Ssl::new(&ctx.build()).unwrap();
 
         let domain = domain.to_owned();
-        ssl.set_verify_callback(SSL_VERIFY_PEER, move |p, x| verify_callback(&domain, p, x));
+        ssl.set_verify_callback(SslVerifyMode::PEER, move |p, x| verify_callback(&domain, p, x));
 
         ssl.connect(stream)
     }
@@ -297,7 +297,7 @@ mod test {
         ctx.set_default_verify_paths().unwrap();
         let mut ssl = Ssl::new(&ctx.build()).unwrap();
 
-        ssl.set_verify_callback(SSL_VERIFY_PEER, |p, x| verify_callback("google.com", p, x));
+        ssl.set_verify_callback(SslVerifyMode::PEER, |p, x| verify_callback("google.com", p, x));
 
         ssl.connect(stream).unwrap();
     }
@@ -309,7 +309,7 @@ mod test {
         ctx.set_default_verify_paths().unwrap();
         let mut ssl = Ssl::new(&ctx.build()).unwrap();
 
-        ssl.set_verify_callback(SSL_VERIFY_PEER, |p, x| verify_callback("foo.com", p, x));
+        ssl.set_verify_callback(SslVerifyMode::PEER, |p, x| verify_callback("foo.com", p, x));
 
         ssl.connect(stream).unwrap_err();
     }
